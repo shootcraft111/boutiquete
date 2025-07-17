@@ -1,61 +1,66 @@
+const sheetID = "1r_QYLItHIqm7AijDQGqsYW_x-Kj9TrzOxBh6rXyDzAY";
+const sheetURL = "https://docs.google.com/spreadsheets/d/1r_QYLItHIqm7AijDQGqsYW_x-Kj9TrzOxBh6rXyDzAY/gviz/tq?tqx=out:json";
 
-const sheetID = "1MTRiRhPtcVmGp3C1f9WcLnlxqJ8GZWD1ZK7rLVa_LV8"; // Sheet de démo
-const sheetName = "1";
-const apiURL = `https://docs.google.com/spreadsheets/d/e/2PACX-1vSLpPE6w3LeqTA0_tBXWP_tpfOFMaVYH5gQjhwPgJsa28dXFvsjQtB9GSVIHRZ3Q2xR3bF2GSV3G4GC/pubhtml`;
+async function fetchProduits() {
+    const response = await fetch(sheetURL);
+    const text = await response.text();
+    const json = JSON.parse(text.substring(47).slice(0, -2));
+    const rows = json.table.rows;
 
-fetch(apiURL)
-  .then(res => res.text())
-  .then(rep => {
-    const json = JSON.parse(rep.substr(47).slice(0, -2));
-    const rows = json.table.rows.map(r => r.c.map(c => c ? c.v : ""));
-    const products = rows.slice(1).map(row => ({
-      id: row[0], name: row[1], category: row[2], price: row[3],
-      description: row[4], image: row[5], video: row[6]
-    }));
+    const produits = rows.map(row => {
+        const [
+            id, nom, categorie, prix, description,
+            imageURL, videoURL, tarifsJSON
+        ] = row.c.map(cell => cell ? cell.v : "");
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const id = urlParams.get("id");
+        let tarifs = [];
+        try { tarifs = JSON.parse(tarifsJSON || "[]"); } catch(e) { console.warn("Erreur JSON", e); }
 
-    if (id) renderProduct(products, id);
-    else renderIndex(products);
-  });
+        return { id, nom, categorie, prix, description, imageURL, videoURL, tarifs };
+    });
 
-function renderIndex(products) {
-  const filter = document.getElementById("categoryFilter");
-  const grid = document.getElementById("productGrid");
-  const categories = [...new Set(products.map(p => p.category))];
-  categories.forEach(cat => {
-    const opt = document.createElement("option");
-    opt.value = cat;
-    opt.textContent = cat;
-    filter.appendChild(opt);
-  });
-  filter.addEventListener("change", () => renderIndex(products));
-
-  grid.innerHTML = "";
-  const selected = filter.value;
-  products.filter(p => selected === "all" || p.category === selected).forEach(p => {
-    const div = document.createElement("div");
-    div.className = "product";
-    div.onclick = () => window.location.href = `produit.html?id=${p.id}`;
-    div.innerHTML = p.video ?
-      `<video src="${p.video}" autoplay muted loop></video>` :
-      `<img src="${p.image}" alt="${p.name}">`;
-    div.innerHTML += `<h3>${p.name}</h3><p>${p.price}</p>`;
-    grid.appendChild(div);
-  });
+    return produits;
 }
 
-function renderProduct(products, id) {
-  const p = products.find(prod => prod.id == id);
-  if (!p) return;
-  const container = document.getElementById("productDetail");
-  container.innerHTML = `
-    <h1>${p.name}</h1>
-    ${p.image ? `<img src="${p.image}" alt="${p.name}">` : ""}
-    ${p.video ? `<video src="${p.video}" controls></video>` : ""}
-    <p><strong>Prix :</strong> ${p.price}</p>
-    <p><strong>Catégorie :</strong> ${p.category}</p>
-    <p>${p.description}</p>
-  `;
+function afficherListeProduits(produits) {
+    const container = document.getElementById("produits");
+    produits.forEach(p => {
+        const div = document.createElement("div");
+        div.className = "produit";
+        div.innerHTML = `
+            <a href="produit.html?id=${p.id}">
+                ${p.videoURL ? `<video src="${p.videoURL}" muted autoplay loop></video>`
+                              : `<img src="${p.imageURL}" alt="${p.nom}" />`}
+                <h3>${p.nom}</h3>
+                <p>${p.prix} €</p>
+            </a>
+        `;
+        container.appendChild(div);
+    });
 }
+
+function afficherProduitSeul(produits) {
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get("id");
+    const produit = produits.find(p => p.id === id);
+    if (!produit) return document.body.innerHTML = "<p>Produit introuvable.</p>";
+
+    document.getElementById("fiche").innerHTML = `
+        <h1>${produit.nom}</h1>
+        ${produit.videoURL ? `<video src="${produit.videoURL}" controls autoplay loop></video>`
+                            : `<img src="${produit.imageURL}" alt="${produit.nom}" />`}
+        <p>${produit.description}</p>
+        <h3>Prix : ${produit.prix} €</h3>
+        ${produit.tarifs.length ? `
+            <h4>Tarifs dégressifs :</h4>
+            <ul>` + produit.tarifs.map(t => `<li>${t.qte} : ${t.prix} €</li>`).join("") + `</ul>`
+            : "" }
+        <a href="index.html">⬅ Retour</a>
+    `;
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
+    const produits = await fetchProduits();
+    if (document.getElementById("produits")) afficherListeProduits(produits);
+    if (document.getElementById("fiche")) afficherProduitSeul(produits);
+});
