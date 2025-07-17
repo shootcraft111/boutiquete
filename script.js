@@ -1,4 +1,4 @@
-const sheetID = "1r_QYLItHIqm7AijDQGqsYW_x-Kj9TrzOxBh6rXyDzAY";
+const sheetID = "1271842491";
 const sheetURL = "https://docs.google.com/spreadsheets/d/1r_QYLItHIqm7AijDQGqsYW_x-Kj9TrzOxBh6rXyDzAY/gviz/tq?tqx=out:json&gid=1271842491";
 
 async function fetchProduits() {
