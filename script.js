@@ -1,5 +1,5 @@
 const sheetID = "1r_QYLItHIqm7AijDQGqsYW_x-Kj9TrzOxBh6rXyDzAY";
-const sheetURL = "https://docs.google.com/spreadsheets/d/1r_QYLItHIqm7AijDQGqsYW_x-Kj9TrzOxBh6rXyDzAY/gviz/tq?tqx=out:json";
+const sheetURL = "https://docs.google.com/spreadsheets/d/1r_QYLItHIqm7AijDQGqsYW_x-Kj9TrzOxBh6rXyDzAY/gviz/tq?tqx=out:json&gid=1271842491";
 
 async function fetchProduits() {
     const response = await fetch(sheetURL);
